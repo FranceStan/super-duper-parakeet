@@ -1,1 +1,1 @@
-# super-duper-parakeet
+# coding-project-template
