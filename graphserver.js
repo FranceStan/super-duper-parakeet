@@ -1,41 +1,42 @@
+require('dotenv').config();
 const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
 const fs = require('fs');
 const express = require('express');
 const session = require('express-session');
+const helmet = require('helmet');
 const app = express();
 
-Uncomment the lines of code  which have been commented below to make the application secure
-const helmet = require('helmet')
-const csrf = require('csurf');
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"]
+        }
+    }
+}));
 
-app.use(helmet)
-app.use(express.csrf());
-
-// Middlewares
-const csrfProtect = csrf({ cookie: true })
-app.get('/form', csrfProtect, function(req, res) {
-res.render('send', { csrfToken: req.csrfToken() })
-})
-app.post('/posts/create', parseForm, csrfProtect, function(req, res) {
-res.send('data is being processed')
-})
-
+// Session configuration
 const sessionConfig = {
-  secret: 'hsbqiz2208!',
-  name: 'graphy',
-  resave: false,
-  saveUninitialized: false,
-  store: store,
-  cookie : {
-    sameSite: 'strict',
-  }
+    secret: process.env.SESSION_SECRET || 'please-change-this-secret',
+    name: 'graphy',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        sameSite: 'strict',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production'
+    }
 };
+
+app.use(session(sessionConfig));
 
 const { URLSearchParams } = require('url');
 global.URLSearchParams = URLSearchParams;
 
-
+// Load US cities data
 let rawdata = fs.readFileSync('UScities.json');
 let USCities = JSON.parse(rawdata);
 
@@ -73,16 +74,16 @@ var root = {
 };
 
 // Create an express server and a GraphQL endpoint
-
-
 app.use('/graphql', graphqlHTTP({
     schema: schema,
     rootValue: root,
-    graphiql: true
+    graphiql: process.env.NODE_ENV !== 'production'
 }));
 
 app.get('/', (req, res) => {
-    res.send("Copy the URL from the address-bar, to paste in Postman to use GrpahQL")
-  })
-  
-app.listen(4000, () => console.log('Express GraphQL Server Now Running On port 4000/graphql'));
+    res.send("Copy the URL from the address-bar, to paste in Postman to use GraphQL")
+})
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Express GraphQL Server Now Running On port ${PORT}/graphql`));
+
