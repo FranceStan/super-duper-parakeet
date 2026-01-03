@@ -7,6 +7,13 @@ const session = require('express-session');
 const helmet = require('helmet');
 const app = express();
 
+// Validate required environment variables
+if (!process.env.SESSION_SECRET) {
+    console.error('ERROR: SESSION_SECRET environment variable is required.');
+    console.error('Please set SESSION_SECRET in your .env file or environment.');
+    process.exit(1);
+}
+
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
@@ -20,7 +27,7 @@ app.use(helmet({
 
 // Session configuration
 const sessionConfig = {
-    secret: process.env.SESSION_SECRET || 'please-change-this-secret',
+    secret: process.env.SESSION_SECRET,
     name: 'graphy',
     resave: false,
     saveUninitialized: false,
